@@ -196,13 +196,12 @@ def acceptQuote():
     if errors:
         return validation_error_response(errors)
     
-    quote = Shipment.objects(id=quote_id, supplier_id=user.id, status='quoted').first()
-    if not quote:
+    shipment = Shipment.objects(id=quote_id, supplier_id=user.id, status='quoted').first()
+    if not shipment:
         return error_response("Not Found", "Quote not found or not available", "quotes", True, status_code=404)
     
-    quote.status = 'booked'
-    quote.quote_status = 'accepted'
-    quote.forwarder_id = quote.quote_forwarder_id
-    quote.quote_forwarder_booked = None
-    quote.save()
-    return success_response(quote.to_dict())
+    shipment.status = 'booked'
+    shipment.quote_status = 'accepted'
+    shipment.forwarder_id = shipment.quote_forwarder_id
+    shipment.save()
+    return success_response(shipment.to_dict())

@@ -96,7 +96,10 @@ def request_accept(shipment_id):
         shipment.quote_forwarder_id = user  # ReferenceField expects User object
         shipment.quote_status = 'accepted'
         shipment.quote_extra = data.get('quote_extra', '')
-        shipment.quote_forwarder_booked.append(forwarder.id)
+        
+        # Update shipment status to 'quoted' when forwarder submits quote
+        if shipment.status == 'draft' or shipment.status == 'pending_quote':
+            shipment.status = 'quoted'
         
         # Parse quote_time if provided
         quote_time = data.get('quote_time')
@@ -115,4 +118,72 @@ def request_accept(shipment_id):
         return success_response( "Quote accepted successfully", shipment.to_dict(), status_code=200)
     except Exception as e:
         logger.error(f"Error in request_accept: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+@forwarder_bp.route('/all-quotes', methods=['POST', 'OPTIONS'])
+@jwt_required()
+def all_quotes():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        user = get_current_user()
+        if not user:
+            return error_response("Unauthorized", "User not found", "auth", True, status_code=401)
+        
+        checkForwarder = User.objects(id=user.id, role='forwarder').first()
+        if not checkForwarder:
+            return error_response("Unauthorized", "User is not a forwarder", "auth", True, status_code=401)
+        
+        # Get all shipments where this forwarder has submitted quotes
+        quotes = Shipment.objects(quote_forwarder_id=user).all()
+        
+        return success_response([quote.to_dict() for quote in quotes], status_code=200)
+    except Exception as e:
+        logger.error(f"Error in all_quotes: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+@forwarder_bp.route('/accepted-quotes', methods=['GET', 'OPTIONS'])
+@jwt_required()
+def accepted_quotes():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        user = get_current_user()
+        if not user:
+            return error_response("Unauthorized", "User not found", "auth", True, status_code=401)
+        
+        checkForwarder = User.objects(id=user.id, role='forwarder').first()
+        if not checkForwarder:
+            return error_response("Unauthorized", "User is not a forwarder", "auth", True, status_code=401)
+        
+        # Get shipments where supplier accepted this forwarder's quote
+        # status='booked' means supplier accepted, forwarder_id or quote_forwarder_id matches this forwarder
+        # Query by both forwarder_id and quote_forwarder_id to catch all accepted quotes
+        accepted_quotes = Shipment.objects(
+            Q(status='booked') &
+            Q(quote_status='accepted') &
+            (Q(forwarder_id=user.id) | Q(quote_forwarder_id=user.id))
+        ).all()
+        
+        # Include supplier details for each quote
+        result = []
+        for quote in accepted_quotes:
+            quote_dict = quote.to_dict()
+            if quote.supplier_id:
+                supplier = User.objects(id=quote.supplier_id.id).first()
+                if supplier:
+                    quote_dict['supplier_details'] = {
+                        'name': supplier.name,
+                        'phone': supplier.phone,
+                        'company_name': supplier.company_name,
+                    }
+            result.append(quote_dict)
+        
+        logger.info(f"Found {len(accepted_quotes)} accepted quotes for forwarder {user.id} (user_id: {str(user.id)})")
+        
+        return success_response(result, status_code=200)
+    except Exception as e:
+        logger.error(f"Error in accepted_quotes: {str(e)}", exc_info=True)
         return error_response("Service Unavailable", str(e), "database", True, status_code=503)

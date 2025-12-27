@@ -177,3 +177,15 @@ def list_shipments():
     except Exception as e:
         return error_response("Service Unavailable", str(e), "database", True, status_code=503)
 
+@shipment_bp.route('/showAcceptedQuotes', methods=['GET'])
+@jwt_required()
+def showAcceptedQuotes():
+    try:
+        user = get_current_user()
+        if not user:
+            return error_response("Unauthorized", "User not found", "auth", True, status_code=401)
+        
+        quotes = Shipment.objects(status='booked', supplier_id=user.id).all()
+        return success_response([quote.to_dict() for quote in quotes], status_code=200)
+    except Exception as e:
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)

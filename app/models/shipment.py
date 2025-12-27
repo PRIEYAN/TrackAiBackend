@@ -84,7 +84,7 @@ class Shipment(Document):
             'quote_time': self.quote_time.isoformat() if self.quote_time else None,
             'quote_extra': self.quote_extra,
             'quote_status': self.quote_status,
-            'quote_forwarder_id': str(self.quote_forwarder_id.id) if self.quote_forwarder_id else None,
+            'booked_forwarder_id': str(self.quote_forwarder_id.id) if self.quote_forwarder_id else None,
             'metadata': self.metadata if self.metadata else {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

@@ -168,6 +168,24 @@ curl -X GET http://localhost:8000/api/shipments/show_shipments -H "Authorization
 - For **buyers**: Returns shipments where `buyer_id` matches the user ID from token
 - For **forwarders**: Returns shipments where `forwarder_id` matches the user ID from token
 
+### Show Accepted Quotes (Booked Shipments)
+Get all shipments with status 'booked' for the current user (supplier).
+
+```bash
+curl -X GET http://localhost:8000/api/shipments/showAcceptedQuotes \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**One-liner:**
+```bash
+curl -X GET http://localhost:8000/api/shipments/showAcceptedQuotes -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Note:**
+- Returns all shipments where `status='booked'` and `supplier_id` matches the authenticated user
+- These are quotes that have been accepted by the supplier
+- Requires JWT authentication
+
 ## Example: Register → Login → Get User Info
 
 ```bash
