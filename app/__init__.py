@@ -64,6 +64,7 @@ def create_app(config_name='development'):
     from app.controllers.quote_controller import quote_bp
     from app.controllers.tracking_controller import tracking_bp
     from app.controllers.health_controller import health_bp
+    from app.controllers.forwarderController import forwarder_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api')
@@ -73,6 +74,7 @@ def create_app(config_name='development'):
     app.register_blueprint(document_bp, url_prefix='/api/documents')
     app.register_blueprint(quote_bp, url_prefix='/api/quotes')
     app.register_blueprint(tracking_bp, url_prefix='/api/tracking')
+    app.register_blueprint(forwarder_bp, url_prefix='/api/forwarder')
     app.register_blueprint(health_bp)
     
     # Error handlers

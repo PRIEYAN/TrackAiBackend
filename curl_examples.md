@@ -203,3 +203,31 @@ curl -X GET http://localhost:8000/api/me \
   -H "Authorization: Bearer $TOKEN"
 ```
 
+## Forwarder Routes (Requires JWT Token - Forwarder Role)
+
+### Show Available Shipments (Without Forwarder)
+Get all shipments that don't have a forwarder assigned yet (available for bidding).
+
+```bash
+curl -X GET http://localhost:8000/api/forwarder/show-shipments \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**One-liner:**
+```bash
+curl -X GET http://localhost:8000/api/forwarder/show-shipments -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Get Forwarder Profile
+Get the current forwarder's profile information.
+
+```bash
+curl -X GET http://localhost:8000/api/forwarder/my-profile \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**One-liner:**
+```bash
+curl -X GET http://localhost:8000/api/forwarder/my-profile -H "Authorization: Bearer YOUR_TOKEN"
+```
+
