@@ -175,7 +175,7 @@ class AIService:
         base_prompt = """Extract structured data from this document. Return JSON format with relevant fields."""
         
         prompts = {
-            "invoice": base_prompt + """ Fields: invoice_number, date, amount, currency, items (array with description, quantity, unit_price, total), buyer_name, seller_name, tax_amount.""",
+            "invoice": base_prompt + """ Fields: invoice_number, date, amount, currency, items (array with description, quantity, unit_price, total), buyer_name, seller_name, tax_amount, payment_terms, summary, company_name, due_date, po_number, notes.""",
             "packing_list": base_prompt + """ Fields: packing_list_number, date, total_packages, total_weight_kg, total_volume_cbm, items (array with description, quantity, weight_kg, volume_cbm, hs_code).""",
             "commercial_invoice": base_prompt + """ Fields: invoice_number, date, exporter, importer, items (array with description, quantity, unit_price, total, hs_code), total_amount, currency, incoterm.""",
             "certificate_of_origin": base_prompt + """ Fields: certificate_number, issue_date, exporter, importer, origin_country, items (array with description, hs_code).""",
