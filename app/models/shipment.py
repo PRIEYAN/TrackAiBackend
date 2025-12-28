@@ -1,6 +1,7 @@
 from mongoengine import Document, StringField, IntField, FloatField, BooleanField, DateTimeField, ReferenceField, DictField
 from datetime import datetime
 from app.models.user import User
+from app.models.driver import Driver
 
 
 class Shipment(Document):
@@ -27,6 +28,7 @@ class Shipment(Document):
     quote_extra = StringField() #optional
     quote_status = StringField(default='pending', choices=['pending', 'accepted', 'rejected'])
     quote_forwarder_id = ReferenceField(User)
+    assigned_driver_id = ReferenceField(Driver)
 
     total_packages = IntField()
     package_type = StringField()
@@ -85,6 +87,7 @@ class Shipment(Document):
             'quote_extra': self.quote_extra,
             'quote_status': self.quote_status,
             'booked_forwarder_id': str(self.quote_forwarder_id.id) if self.quote_forwarder_id else None,
+            'assigned_driver_id': str(self.assigned_driver_id.id) if self.assigned_driver_id else None,
             'metadata': self.metadata if self.metadata else {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

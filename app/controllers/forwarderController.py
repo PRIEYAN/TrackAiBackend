@@ -2,6 +2,7 @@ from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 from app.models.shipment import Shipment
 from app.models.user import User
+from app.models.driver import Driver
 from app.utils.auth import get_current_user
 from app.views.response_formatter import success_response, error_response
 from mongoengine import Q
@@ -176,6 +177,7 @@ def accepted_quotes():
                 if supplier:
                     quote_dict['supplier_details'] = {
                         'name': supplier.name,
+                        'email': supplier.email,
                         'phone': supplier.phone,
                         'company_name': supplier.company_name,
                     }
@@ -186,4 +188,60 @@ def accepted_quotes():
         return success_response(result, status_code=200)
     except Exception as e:
         logger.error(f"Error in accepted_quotes: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+@forwarder_bp.route('/show-drivers', methods=['GET', 'OPTIONS'])
+@jwt_required()
+def showDrivers():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        user = get_current_user()
+        if not user:
+            return error_response("Unauthorized", "User not found", "auth", True, status_code=401)
+        
+        checkForwarder = User.objects(id=user.id, role='forwarder').first()
+        if not checkForwarder:
+            return error_response("Unauthorized", "User is not a forwarder", "auth", True, status_code=401)
+        
+        # Fetch all active drivers
+        drivers = Driver.objects(is_active=True).all()
+        return success_response([driver.to_dict() for driver in drivers], status_code=200)
+    except Exception as e:
+        logger.error(f"Error in showDrivers: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+@forwarder_bp.route('/assign-driver/<shipment_id>/<driver_id>', methods=['PUT', 'OPTIONS'])
+@jwt_required()
+def assignDriver(shipment_id, driver_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        user = get_current_user()
+        if not user:
+            return error_response("Unauthorized", "User not found", "auth", True, status_code=401)
+        
+        checkForwarder = User.objects(id=user.id, role='forwarder').first()
+        if not checkForwarder:
+            return error_response("Unauthorized", "User is not a forwarder", "auth", True, status_code=401)
+        
+        # Find shipment
+        shipment = Shipment.objects(id=shipment_id).first()
+        if not shipment:
+            return error_response("Not Found", "Shipment not found", "shipments", True, status_code=404)
+        
+        # Find driver
+        driver = Driver.objects(id=driver_id).first()
+        if not driver:
+            return error_response("Not Found", "Driver not found", "drivers", True, status_code=404)
+        
+        # Assign driver to shipment
+        shipment.assigned_driver_id = driver
+        shipment.save()
+        
+        return success_response(shipment.to_dict(), status_code=200)
+    except Exception as e:
+        logger.error(f"Error in assignDriver: {str(e)}", exc_info=True)
         return error_response("Service Unavailable", str(e), "database", True, status_code=503)

@@ -1,6 +1,7 @@
 from flask import Blueprint, request
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, get_jwt
 from app.models.driver import Driver
+from app.models.shipment import Shipment
 from app.utils.auth import hash_password, verify_password
 from app.utils.validators import validate_email_format, validate_request_json
 from app.views.response_formatter import success_response, error_response, validation_error_response
@@ -9,6 +10,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 driver_bp = Blueprint('driver', __name__)
+
+
+def get_current_driver():
+    """Get current driver from JWT token"""
+    email = get_jwt_identity()
+    claims = get_jwt()
+    driver_id = claims.get('driver_id')
+    
+    if driver_id:
+        return Driver.objects(id=driver_id).first()
+    else:
+        # Fallback to email lookup
+        return Driver.objects(email=email).first()
 
 
 def create_driver_token(driver: Driver) -> dict:
@@ -145,4 +159,46 @@ def login():
         return success_response(token_data, status_code=200)
     except Exception as e:
         logger.error(f"Error in driver login: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+
+@driver_bp.route('/my-profile', methods=['GET', 'OPTIONS'])
+@jwt_required()
+def my_profile():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        driver = get_current_driver()
+        if not driver:
+            return error_response("Unauthorized", "Driver not found", "auth", True, status_code=401)
+        
+        if not driver.is_active:
+            return error_response("Forbidden", "Driver account is inactive", "auth", True, status_code=403)
+        
+        return success_response(driver.to_dict(), status_code=200)
+    except Exception as e:
+        logger.error(f"Error in my_profile: {str(e)}", exc_info=True)
+        return error_response("Service Unavailable", str(e), "database", True, status_code=503)
+
+
+@driver_bp.route('/my-shipments', methods=['GET', 'OPTIONS'])
+@jwt_required()
+def my_shipments():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        driver = get_current_driver()
+        if not driver:
+            return error_response("Unauthorized", "Driver not found", "auth", True, status_code=401)
+        
+        # Get the most recent shipment assigned to the driver
+        shipment = Shipment.objects(assigned_driver_id=driver).order_by('-created_at').first()
+        if not shipment:
+            return success_response(None, status_code=200)  # Return empty instead of 404
+        
+        return success_response(shipment.to_dict(), status_code=200)
+    except Exception as e:
+        logger.error(f"Error in my_shipments: {str(e)}", exc_info=True)
         return error_response("Service Unavailable", str(e), "database", True, status_code=503)
